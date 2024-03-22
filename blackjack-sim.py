@@ -1,4 +1,5 @@
 import random
+import math
 
 # Define card values
 card_values = {
@@ -66,6 +67,9 @@ def update_running_count(card, running_count):
         running_count -= 1
     return running_count
 
+def update_true_count(running_count, deck_length):
+    return math.floor(running_count / round(deck_length / 52))
+
 # Simulate blackjack game with a shoe penetration
 def simulate_blackjack(deck_size, shoe_penetration, bet_size):
     deck = create_deck(deck_size)
@@ -74,6 +78,7 @@ def simulate_blackjack(deck_size, shoe_penetration, bet_size):
     ties = 0
     hands_played = 0
     running_count = 0
+    true_count = 0
 
     while len(deck) / (len(card_values) * len(card_suits) * deck_size) > shoe_penetration:
         if not deck:
@@ -85,6 +90,7 @@ def simulate_blackjack(deck_size, shoe_penetration, bet_size):
         # Update running count
         for card in player_hand + dealer_hand:
             running_count = update_running_count(card, running_count)
+            true_count = update_true_count(running_count, len(deck))
 
         # Dealer's turn
         while calculate_hand_value(dealer_hand) < 17:
@@ -92,7 +98,8 @@ def simulate_blackjack(deck_size, shoe_penetration, bet_size):
                 break
             dealer_hand.append(deck.pop())
             running_count = update_running_count(dealer_hand[-1], running_count)
-        
+            true_count = update_true_count(running_count, len(deck))
+
         # Player's turn
         while True:
             player_action = basic_strategy(player_hand, dealer_hand[0])
@@ -101,6 +108,7 @@ def simulate_blackjack(deck_size, shoe_penetration, bet_size):
                     break
                 player_hand.append(deck.pop())
                 running_count = update_running_count(player_hand[-1], running_count)
+                true_count = update_true_count(running_count, len(deck))
                 if calculate_hand_value(player_hand) > 21:
                     dealer_wins += 1
                     break
@@ -131,6 +139,8 @@ def simulate_blackjack(deck_size, shoe_penetration, bet_size):
     net_profit = (player_wins - dealer_wins) * bet_size
     print("Net profit (if positive, player wins):", net_profit)
     print("Final running count:", running_count)
+    true_count = update_true_count(running_count, len(deck))
+    print("True count:", true_count)
 
 # Run the simulation with a deck size of 6, a shoe penetration of 75%, and a bet size of 10
 simulate_blackjack(6, 0.75, 10)
