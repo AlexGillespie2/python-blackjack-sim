@@ -73,6 +73,7 @@ def update_true_count(running_count, deck_length):
 # Simulate blackjack game with a shoe penetration
 def simulate_blackjack(deck_size, shoe_penetration, bet_size):
     deck = create_deck(deck_size)
+    player_bankroll = 0
     player_wins = 0
     dealer_wins = 0
     ties = 0
@@ -92,14 +93,6 @@ def simulate_blackjack(deck_size, shoe_penetration, bet_size):
             running_count = update_running_count(card, running_count)
             true_count = update_true_count(running_count, len(deck))
 
-        # Dealer's turn
-        while calculate_hand_value(dealer_hand) < 17:
-            if not deck:
-                break
-            dealer_hand.append(deck.pop())
-            running_count = update_running_count(dealer_hand[-1], running_count)
-            true_count = update_true_count(running_count, len(deck))
-
         # Player's turn
         while True:
             player_action = basic_strategy(player_hand, dealer_hand[0])
@@ -114,6 +107,14 @@ def simulate_blackjack(deck_size, shoe_penetration, bet_size):
                     break
             elif player_action == 's':
                 break
+
+        # Dealer's turn
+        while calculate_hand_value(dealer_hand) < 17:
+            if not deck:
+                break
+            dealer_hand.append(deck.pop())
+            running_count = update_running_count(dealer_hand[-1], running_count)
+            true_count = update_true_count(running_count, len(deck))
 
         # Determine winner
         player_value = calculate_hand_value(player_hand)
