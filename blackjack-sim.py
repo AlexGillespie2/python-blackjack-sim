@@ -57,6 +57,15 @@ def basic_strategy(player_hand, dealer_upcard):
         else:
             return 'h'  # Hit
 
+# Update running count based on the card dealt
+def update_running_count(card, running_count):
+    card_value = card_values[card[0]]
+    if card_value in [2, 3, 4, 5, 6]:
+        running_count += 1
+    elif card_value == 10:
+        running_count -= 1
+    return running_count
+
 # Simulate blackjack game with a shoe penetration
 def simulate_blackjack(deck_size, shoe_penetration, bet_size):
     deck = create_deck(deck_size)
@@ -64,20 +73,34 @@ def simulate_blackjack(deck_size, shoe_penetration, bet_size):
     dealer_wins = 0
     ties = 0
     hands_played = 0
+    running_count = 0
 
     while len(deck) / (len(card_values) * len(card_suits) * deck_size) > shoe_penetration:
+        if not deck:
+            break
+
         player_hand = [deck.pop(), deck.pop()]
         dealer_hand = [deck.pop(), deck.pop()]
 
+        # Update running count
+        for card in player_hand + dealer_hand:
+            running_count = update_running_count(card, running_count)
+
         # Dealer's turn
         while calculate_hand_value(dealer_hand) < 17:
+            if not deck:
+                break
             dealer_hand.append(deck.pop())
+            running_count = update_running_count(dealer_hand[-1], running_count)
         
         # Player's turn
         while True:
             player_action = basic_strategy(player_hand, dealer_hand[0])
             if player_action == 'h':
+                if not deck:
+                    break
                 player_hand.append(deck.pop())
+                running_count = update_running_count(player_hand[-1], running_count)
                 if calculate_hand_value(player_hand) > 21:
                     dealer_wins += 1
                     break
@@ -107,6 +130,7 @@ def simulate_blackjack(deck_size, shoe_penetration, bet_size):
     print("Total bet size:", total_bet)
     net_profit = (player_wins - dealer_wins) * bet_size
     print("Net profit (if positive, player wins):", net_profit)
+    print("Final running count:", running_count)
 
 # Run the simulation with a deck size of 6, a shoe penetration of 75%, and a bet size of 10
 simulate_blackjack(6, 0.75, 10)
