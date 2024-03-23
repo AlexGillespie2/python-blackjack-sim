@@ -70,13 +70,14 @@ def update_running_count(card, running_count):
 def update_true_count(running_count, deck_length):
     return math.floor(running_count / round(deck_length / 52))
 
-# Simulate blackjack game with a shoe penetration
 def simulate_blackjack(deck_size, shoe_penetration, bet_size):
     deck = create_deck(deck_size)
     player_bankroll = 0
     player_wins = 0
     dealer_wins = 0
     ties = 0
+    player_blackjacks = 0
+    dealer_blackjacks = 0
     hands_played = 0
     running_count = 0
     true_count = 0
@@ -85,13 +86,28 @@ def simulate_blackjack(deck_size, shoe_penetration, bet_size):
         if not deck:
             break
 
-        player_hand = [deck.pop(), deck.pop()]
+        # Check for dealer blackjack
         dealer_hand = [deck.pop(), deck.pop()]
+        running_count = update_running_count(dealer_hand[0], running_count)
+        running_count = update_running_count(dealer_hand[1], running_count)
+        true_count = update_true_count(running_count, len(deck))
 
-        # Update running count
-        for card in player_hand + dealer_hand:
-            running_count = update_running_count(card, running_count)
-            true_count = update_true_count(running_count, len(deck))
+        if calculate_hand_value(dealer_hand) == 21:
+            dealer_blackjacks += 1
+            continue  # Skip the rest of the hand
+
+        # Player's turn
+        player_hand = [deck.pop(), deck.pop()]
+        running_count = update_running_count(player_hand[0], running_count)
+        running_count = update_running_count(player_hand[1], running_count)
+        true_count = update_true_count(running_count, len(deck))
+
+        # Check for player blackjack
+        if calculate_hand_value(player_hand) == 21:
+            player_blackjacks += 1
+            player_wins += 1
+            hands_played += 1
+            continue  # Skip the rest of the hand
 
         # Player's turn
         while True:
@@ -134,6 +150,8 @@ def simulate_blackjack(deck_size, shoe_penetration, bet_size):
     print("Player wins:", player_wins)
     print("Dealer wins:", dealer_wins)
     print("Ties:", ties)
+    print("Player blackjacks:", player_blackjacks)
+    print("Dealer blackjacks:", dealer_blackjacks)
     print("Hands played:", hands_played)
     total_bet = bet_size * hands_played
     print("Total bet size:", total_bet)
