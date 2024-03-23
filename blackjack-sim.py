@@ -59,7 +59,7 @@ def basic_strategy(player_hand, dealer_upcard):
             return 'h'  # Hit
 
 # Update running count based on the card dealt
-def update_running_count(card, running_count):
+def calculate_running_count(card, running_count):
     card_value = card_values[card[0]]
     if card_value in [2, 3, 4, 5, 6]:
         running_count += 1
@@ -67,12 +67,13 @@ def update_running_count(card, running_count):
         running_count -= 1
     return running_count
 
-def update_true_count(running_count, deck_length):
+def calculate_true_count(running_count, deck_length):
     return math.floor(running_count / round(deck_length / 52))
 
-def simulate_blackjack(deck_size, shoe_penetration, bet_size):
-    deck = create_deck(deck_size)
+def simulate_blackjack(deck_count, shoe_penetration, bet_size):
+    deck = create_deck(deck_count)
     player_bankroll = 0
+    current_player_bet_size = bet_size
     player_wins = 0
     dealer_wins = 0
     ties = 0
@@ -82,25 +83,45 @@ def simulate_blackjack(deck_size, shoe_penetration, bet_size):
     running_count = 0
     true_count = 0
 
-    while len(deck) / (len(card_values) * len(card_suits) * deck_size) > shoe_penetration:
+    while len(deck) / (len(card_values) * len(card_suits) * deck_count) > (1- shoe_penetration):
         if not deck:
             break
 
-        # Check for dealer blackjack
-        dealer_hand = [deck.pop(), deck.pop()]
-        running_count = update_running_count(dealer_hand[0], running_count)
-        running_count = update_running_count(dealer_hand[1], running_count)
-        true_count = update_true_count(running_count, len(deck))
+        true_count = calculate_true_count(running_count, len(deck))
 
+        current_player_bet_size = bet_size
+        player_bankroll -= current_player_bet_size
+
+        # All Player's first card
+        player_hand = [deck.pop(), None]
+        running_count = calculate_running_count(player_hand[0], running_count)
+
+        # dealers first card
+        dealer_hand = [deck.pop(), None]
+        running_count = calculate_running_count(dealer_hand[0], running_count)
+
+        # All Players second card
+        player_hand = [player_hand[0], deck.pop()]
+        running_count = calculate_running_count(player_hand[0], running_count)
+
+        # dealers second card
+        dealer_hand = [dealer_hand[0], deck.pop()]
+        running_count = calculate_running_count(dealer_hand[0], running_count)
+
+        # check for dealer blackjack
         if calculate_hand_value(dealer_hand) == 21:
             dealer_blackjacks += 1
-            continue  # Skip the rest of the hand
+            # if dealer blackjack check for player blackjack
+            if calculate_hand_value(player_hand) == 21:
+                player_blackjacks += 1      
+                hands_played += 1
+                ties += 1
+                continue
 
-        # Player's turn
-        player_hand = [deck.pop(), deck.pop()]
-        running_count = update_running_count(player_hand[0], running_count)
-        running_count = update_running_count(player_hand[1], running_count)
-        true_count = update_true_count(running_count, len(deck))
+            dealer_wins += 1
+            hands_played += 1
+            
+            continue  # Skip the rest of the hand
 
         # Check for player blackjack
         if calculate_hand_value(player_hand) == 21:
@@ -116,8 +137,7 @@ def simulate_blackjack(deck_size, shoe_penetration, bet_size):
                 if not deck:
                     break
                 player_hand.append(deck.pop())
-                running_count = update_running_count(player_hand[-1], running_count)
-                true_count = update_true_count(running_count, len(deck))
+                running_count = calculate_running_count(player_hand[-1], running_count)
                 if calculate_hand_value(player_hand) > 21:
                     dealer_wins += 1
                     break
@@ -129,8 +149,7 @@ def simulate_blackjack(deck_size, shoe_penetration, bet_size):
             if not deck:
                 break
             dealer_hand.append(deck.pop())
-            running_count = update_running_count(dealer_hand[-1], running_count)
-            true_count = update_true_count(running_count, len(deck))
+            running_count = calculate_running_count(dealer_hand[-1], running_count)
 
         # Determine winner
         player_value = calculate_hand_value(player_hand)
@@ -154,11 +173,8 @@ def simulate_blackjack(deck_size, shoe_penetration, bet_size):
     print("Dealer blackjacks:", dealer_blackjacks)
     print("Hands played:", hands_played)
     total_bet = bet_size * hands_played
-    print("Total bet size:", total_bet)
-    net_profit = (player_wins - dealer_wins) * bet_size
-    print("Net profit (if positive, player wins):", net_profit)
     print("Final running count:", running_count)
-    true_count = update_true_count(running_count, len(deck))
+    true_count = calculate_true_count(running_count, len(deck))
     print("True count:", true_count)
 
 # Run the simulation with a deck size of 6, a shoe penetration of 75%, and a bet size of 10
